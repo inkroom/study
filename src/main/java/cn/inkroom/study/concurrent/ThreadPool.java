@@ -12,6 +12,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ThreadPool {
 
     public static void main(String[] args) {
+
+        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+            @Override
+            public void run() {
+                System.out.println("正在尝试退出程序");
+            }
+        }));
         ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(10,
                 10,
                 10000L, TimeUnit.MILLISECONDS,
@@ -19,9 +26,18 @@ public class ThreadPool {
                 new ThreadFactory() {
                     private AtomicInteger integer = new AtomicInteger(1);
 
+                    private Thread.UncaughtExceptionHandler handler = new Thread.UncaughtExceptionHandler() {
+                        @Override
+                        public void uncaughtException(Thread t, Throwable e) {
+                            System.out.printf("%s 出错了 %s %n",t.getName(),e.getMessage());
+                        }
+                    };
+
                     @Override
                     public Thread newThread(Runnable r) {
-                        return new Thread(Thread.currentThread().getThreadGroup(), r, "ink-thread-" + integer.getAndIncrement(), 0);
+                        Thread thread = new Thread(Thread.currentThread().getThreadGroup(), r, "ink-thread-" + integer.getAndIncrement(), 0);
+                        thread.setUncaughtExceptionHandler(handler);
+                        return thread;
                     }
                 },
                 (r, executor) -> {
@@ -40,6 +56,8 @@ public class ThreadPool {
             }
         });
 
+        // 设置全局异常接口
+//        Thread.setDefaultUncaughtExceptionHandler();
 
         try {
             System.out.println(submit.get());
@@ -48,6 +66,12 @@ public class ThreadPool {
         } catch (ExecutionException e) {
             e.printStackTrace();
         }
+        threadPoolExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                throw new RuntimeException("随便一个错误");
+            }
+        });
 
     }
 }
