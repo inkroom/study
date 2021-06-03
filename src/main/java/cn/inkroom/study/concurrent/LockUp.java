@@ -100,25 +100,27 @@ public class LockUp {
     public static void main(String[] args) {
 
         VirtualMachine vm = VM.current();
-        System.out.println(vm.getLong(new Object(), 0) & 7);
+        long mark = vm.getLong(sync, 0);
+        System.out.println(lockDes(mark));
 
         // 测试偏向锁升级成轻量级锁
         new Thread(new Runnable() {
             @Override
             public void run() {
-                while (true) {
+                while (true) {//怀疑是这里使用了
                     long l = System.nanoTime();
                     long start = System.currentTimeMillis();
                     //如果没有线程竞争锁，这里就是偏向锁，有竞争升级成轻量级锁，自旋以获取锁，理论上获取锁的时间会更长
                     synchronized (sync) {
                         long mark = vm.getLong(sync, 0);
-                        System.out.printf("%s获取了锁 %d %d %s %d %n", Thread.currentThread().getName(), System.nanoTime() - l, (System.currentTimeMillis() - start) / 1000, mark & 7 , mark);
+                        System.out.printf("%s获取了锁 %d %d %s %n", Thread.currentThread().getName(), System.nanoTime() - l, (System.currentTimeMillis() - start) / 1000, lockDes(mark));
                         try {
                             TimeUnit.SECONDS.sleep(2);
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
                     }
+
 
                 }
             }
@@ -130,33 +132,36 @@ public class LockUp {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-//        long l = System.nanoTime();
-//        long start = System.currentTimeMillis();
+        long l = System.nanoTime();
+        long start = System.currentTimeMillis();
 //        synchronized (sync) {
-//            System.out.printf("只竞争一次的%s获取了锁 %d %d %s %n", Thread.currentThread().getName(), System.nanoTime() - l, (System.currentTimeMillis() - start) / 1000, vm.getLong(sync, 0) & 7);
+//            mark = vm.getLong(sync, 0);
+//            System.out.printf("只竞争一次的%s获取了锁 %d %d %s %n", Thread.currentThread().getName(), System.nanoTime() - l, (System.currentTimeMillis() - start) / 1000, lockDes(mark));
 //        }
 
-//        new Thread(new Runnable() {
-//            @Override
-//            public void run() {
-//
-//
-//                while (true) {
-//                    long l = System.nanoTime();
-//                    long start = System.currentTimeMillis();
-//                    //如果没有线程竞争锁，这里就是偏向锁，有竞争升级成轻量级锁，自旋以获取锁，理论上获取锁的时间会更长
-//                    synchronized (sync) {
-//                        System.out.printf("后的的%s获取了锁 %d %d %d %n", Thread.currentThread().getName(), System.nanoTime() - l, (System.currentTimeMillis() - start) / 1000,vm.getLong(sync,0) & 7);
-//                        try {
-//                            TimeUnit.SECONDS.sleep(1);
-//                        } catch (InterruptedException e) {
-//                            e.printStackTrace();
-//                        }
-//                    }
-//
-//                }
-//            }
-//        }).start();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+
+
+                while (true) {
+                    long l = System.nanoTime();
+                    long start = System.currentTimeMillis();
+                    //如果没有线程竞争锁，这里就是偏向锁，有竞争升级成轻量级锁，自旋以获取锁，理论上获取锁的时间会更长
+                    synchronized (sync) {
+                        long m = vm.getLong(sync, 0);
+                        System.out.printf("只竞争一次的%s获取了锁 %d %d %s  %n", Thread.currentThread().getName(), System.nanoTime() - l, (System.currentTimeMillis() - start) / 1000, lockDes(mark));
+
+                        try {
+                            TimeUnit.SECONDS.sleep(1);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                }
+            }
+        }).start();
 
         /*
 
@@ -181,5 +186,28 @@ public class LockUp {
          */
     }
 
+
+    private static String lockDes(long mark) {
+
+        long bits = mark & 0b11;
+        switch ((int) bits) {
+            case 0b11:
+                return "(marked: GC)";
+            case 0b00:
+                return "(thin lock: 轻量级锁)";
+            case 0b10:
+                return "(fat lock: 重量级锁)";
+            case 0b01:
+                int tribits = (int) (mark & 0b111);
+                switch (tribits) {
+                    case 0b001:
+                        return "(non-biasable)";
+                    case 0b101:
+                        return "(biased: 偏向锁)";
+                }
+        }
+
+        return "错误数据";
+    }
 
 }
