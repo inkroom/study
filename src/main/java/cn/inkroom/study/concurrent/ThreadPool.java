@@ -29,14 +29,16 @@ public class ThreadPool {
                     private Thread.UncaughtExceptionHandler handler = new Thread.UncaughtExceptionHandler() {
                         @Override
                         public void uncaughtException(Thread t, Throwable e) {
-                            System.out.printf("%s 出错了 %s %n",t.getName(),e.getMessage());
+                            System.out.printf("%s 出错了 %s %n", t.getName(), e.getMessage());
                         }
                     };
 
                     @Override
                     public Thread newThread(Runnable r) {
-                        Thread thread = new Thread(Thread.currentThread().getThreadGroup(), r, "ink-thread-" + integer.getAndIncrement(), 0);
+                        String name = "ink-thread-" + integer.getAndIncrement();
+                        Thread thread = new Thread(Thread.currentThread().getThreadGroup(), r, name, 0);
                         thread.setUncaughtExceptionHandler(handler);
+                        System.out.println("创建线程=" + name);
                         return thread;
                     }
                 },
@@ -56,6 +58,32 @@ public class ThreadPool {
             }
         });
 
+        threadPoolExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                System.out.println(Thread.currentThread().getName() + " execute");
+            }
+        });
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while (true) {
+                    threadPoolExecutor.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            System.out.printf("%d %d %d %n", threadPoolExecutor.getActiveCount(), threadPoolExecutor.getQueue().size(), threadPoolExecutor.getTaskCount());
+                        }
+                    });
+                    try {
+                        TimeUnit.MILLISECONDS.sleep(500);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }).start();
+
         // 设置全局异常接口
 //        Thread.setDefaultUncaughtExceptionHandler();
 
@@ -66,12 +94,12 @@ public class ThreadPool {
         } catch (ExecutionException e) {
             e.printStackTrace();
         }
-        threadPoolExecutor.execute(new Runnable() {
-            @Override
-            public void run() {
-                throw new RuntimeException("随便一个错误");
-            }
-        });
+//        threadPoolExecutor.execute(new Runnable() {
+//            @Override
+//            public void run() {
+//                throw new RuntimeException("随便一个错误");
+//            }
+//        });
 
     }
 }
