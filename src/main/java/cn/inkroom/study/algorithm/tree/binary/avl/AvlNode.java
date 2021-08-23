@@ -1,4 +1,4 @@
-package cn.inkroom.study.algorithm.avl;
+package cn.inkroom.study.algorithm.tree.binary.avl;
 
 /**
  * AVL二叉树

@@ -1,4 +1,4 @@
-package cn.inkroom.study.algorithm.binary;
+package cn.inkroom.study.algorithm.tree.binary;
 
 /**
  * 二叉查找树

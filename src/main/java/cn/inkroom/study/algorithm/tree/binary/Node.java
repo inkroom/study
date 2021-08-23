@@ -1,7 +1,8 @@
-package cn.inkroom.study.algorithm.binary;
+package cn.inkroom.study.algorithm.tree.binary;
 
 public class Node <T>{
 
+    private int height;
     private T data;
     private Node<T> left;
     private Node<T> right;
@@ -19,6 +20,14 @@ public class Node <T>{
 
     public Node(T data) {
         this.data = data;
+    }
+
+    public int getHeight() {
+        return height;
+    }
+
+    public void setHeight(int height) {
+        this.height = height;
     }
 
     public T getData() {
