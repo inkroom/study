@@ -4,6 +4,7 @@ import org.openjdk.jol.info.ClassLayout;
 import org.openjdk.jol.vm.VM;
 import org.openjdk.jol.vm.VirtualMachine;
 
+import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -114,13 +115,12 @@ public class LockUp {
                     synchronized (sync) {
                         long mark = vm.getLong(sync, 0);
                         System.out.printf("%s获取了锁 %d %d %s %n", Thread.currentThread().getName(), System.nanoTime() - l, (System.currentTimeMillis() - start) / 1000, lockDes(mark));
-                        try {
-                            TimeUnit.SECONDS.sleep(2);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
                     }
-
+                    try {
+                        TimeUnit.SECONDS.sleep(1);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
 
                 }
             }
@@ -129,20 +129,26 @@ public class LockUp {
 
         try {
             TimeUnit.SECONDS.sleep(5);
+            TimeUnit.MILLISECONDS.sleep(500);//把获取锁间隔开
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
         long l = System.nanoTime();
         long start = System.currentTimeMillis();
-//        synchronized (sync) {
-//            mark = vm.getLong(sync, 0);
-//            System.out.printf("只竞争一次的%s获取了锁 %d %d %s %n", Thread.currentThread().getName(), System.nanoTime() - l, (System.currentTimeMillis() - start) / 1000, lockDes(mark));
-//        }
-
+        System.out.println("开始竞争");
+        synchronized (sync) {
+            mark = vm.getLong(sync, 0);
+            System.out.printf("只竞争一次的%s获取了锁 %d %d %s %n", Thread.currentThread().getName(), System.nanoTime() - l, (System.currentTimeMillis() - start) / 1000, lockDes(mark));
+        }
+        try {
+            TimeUnit.SECONDS.sleep(5);
+            TimeUnit.MILLISECONDS.sleep(500);//把获取锁间隔开
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         new Thread(new Runnable() {
             @Override
             public void run() {
-
 
                 while (true) {
                     long l = System.nanoTime();
@@ -150,7 +156,7 @@ public class LockUp {
                     //如果没有线程竞争锁，这里就是偏向锁，有竞争升级成轻量级锁，自旋以获取锁，理论上获取锁的时间会更长
                     synchronized (sync) {
                         long m = vm.getLong(sync, 0);
-                        System.out.printf("只竞争一次的%s获取了锁 %d %d %s  %n", Thread.currentThread().getName(), System.nanoTime() - l, (System.currentTimeMillis() - start) / 1000, lockDes(mark));
+                        System.out.printf("第三个线程%s获取了锁 %d %d %s  %n", Thread.currentThread().getName(), System.nanoTime() - l, (System.currentTimeMillis() - start) / 1000, lockDes(m));
 
                         try {
                             TimeUnit.SECONDS.sleep(1);
@@ -163,27 +169,6 @@ public class LockUp {
             }
         }).start();
 
-        /*
-
-        以下列出一次测试数据
-    获取了锁 30190
-    获取了锁 7165
-    获取了锁 9322
-    获取了锁 8237
-    获取了锁 8061
-    获取了锁 7585
-    获取了锁 9970
-    获取了锁 25178
-    获取了锁 6516
-    竞争锁
-    获取了锁 269768
-    获取了锁 10914
-    获取了锁 8881
-    获取了锁 9363
-    获取了锁 10229
-    获取了锁 12085
-    获取了锁 16577
-         */
     }
 
 

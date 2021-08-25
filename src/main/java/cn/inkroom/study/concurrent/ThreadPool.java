@@ -29,14 +29,16 @@ public class ThreadPool {
                     private Thread.UncaughtExceptionHandler handler = new Thread.UncaughtExceptionHandler() {
                         @Override
                         public void uncaughtException(Thread t, Throwable e) {
-                            System.out.printf("%s 出错了 %s %n",t.getName(),e.getMessage());
+                            System.out.printf("%s 出错了 %s %n", t.getName(), e.getMessage());
                         }
                     };
 
                     @Override
                     public Thread newThread(Runnable r) {
-                        Thread thread = new Thread(Thread.currentThread().getThreadGroup(), r, "ink-thread-" + integer.getAndIncrement(), 0);
+                        String name = "ink-thread-" + integer.getAndIncrement();
+                        Thread thread = new Thread(Thread.currentThread().getThreadGroup(), r, name, 0);
                         thread.setUncaughtExceptionHandler(handler);
+                        System.out.println("新建线程=" + name);
                         return thread;
                     }
                 },
@@ -46,6 +48,27 @@ public class ThreadPool {
                             executor.toString());
                 });
 
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                for (int i = 0; i < 100; i++) {
+                    int finalI = i;
+                    threadPoolExecutor.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            System.out.println("run " + finalI + " " + threadPoolExecutor.getTaskCount() + "  " + threadPoolExecutor.getActiveCount()+" "+threadPoolExecutor.getQueue().size());
+                        }
+                    });
+                    try {
+                        TimeUnit.MILLISECONDS.sleep(500);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+            }
+        }).start();
 
         Future<Integer> submit = threadPoolExecutor.submit(new Callable<Integer>() {
             @Override
@@ -66,12 +89,12 @@ public class ThreadPool {
         } catch (ExecutionException e) {
             e.printStackTrace();
         }
-        threadPoolExecutor.execute(new Runnable() {
-            @Override
-            public void run() {
-                throw new RuntimeException("随便一个错误");
-            }
-        });
+//        threadPoolExecutor.execute(new Runnable() {
+//            @Override
+//            public void run() {
+//                throw new RuntimeException("随便一个错误");
+//            }
+//        });
 
     }
 }
