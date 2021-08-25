@@ -38,7 +38,7 @@ public class ThreadPool {
                         String name = "ink-thread-" + integer.getAndIncrement();
                         Thread thread = new Thread(Thread.currentThread().getThreadGroup(), r, name, 0);
                         thread.setUncaughtExceptionHandler(handler);
-                        System.out.println("新建线程=" + name);
+                        System.out.println("创建线程=" + name);
                         return thread;
                     }
                 },
@@ -78,6 +78,31 @@ public class ThreadPool {
                 return 1;
             }
         });
+
+        threadPoolExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                System.out.println(Thread.currentThread().getName() + " execute"); }
+        });
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while (true) {
+                    threadPoolExecutor.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            System.out.printf("%d %d %d %n", threadPoolExecutor.getActiveCount(), threadPoolExecutor.getQueue().size(), threadPoolExecutor.getTaskCount());
+                        }
+                    });
+                    try {
+                        TimeUnit.MILLISECONDS.sleep(500);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }).start();
 
         // 设置全局异常接口
 //        Thread.setDefaultUncaughtExceptionHandler();
